@@ -21,7 +21,7 @@ public:
     void simulate();
 
     // miscellaneous
-    std::shared_ptr<Vehicle> get_shared_this() { return shared_from_this(); }
+    std::shared_ptr<Vehicle> get_shared_this() { return shared_from_this(); } // Explaination: https://stackoverflow.com/questions/34061515/how-stdenable-shared-from-thisshared-from-this-works
 
 private:
     // typical behaviour methods

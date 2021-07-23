@@ -24,13 +24,16 @@ void Vehicle::setCurrentDestination(std::shared_ptr<Intersection> destination)
 
 void Vehicle::simulate()
 {
-    // launch drive function in a thread
-    threads.emplace_back(std::thread(&Vehicle::drive, this));
+    // launch drive function in a thread and call the drive function within a thread
+    threads.emplace_back(std::thread(&Vehicle::drive, this)); // emplace back, because we want to move the thread instance instead of copying it 
+        // &Vehicle::drive hands the address of the drive function (is the method equivalent to a function pointer) that should be called by the thread object. The Instance must be handed over by a pointer (like in this example) or by an explicit reference (std::ref(varName))
 }
 
 // virtual function which is executed in a thread
 void Vehicle::drive()
 {
+    // CAUTION: This code is executed within the individual thread for the vehicle. This function will never end (while true), so it does not make any sense to wait for a join of this thread, since it will never finishing an so never join 
+
     // print id of the current thread
     std::unique_lock<std::mutex> lck(_mtx);
     std::cout << "Vehicle #" << _id << "::drive: thread id = " << std::this_thread::get_id() << std::endl;
@@ -46,11 +49,12 @@ void Vehicle::drive()
     while (true)
     {
         // sleep at every iteration to reduce CPU usage
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // If you do not do the waiting, the processor trys to simulate everything as fast as possible and this will result in a very high CPU load. If you wait, the CPU load will not that high, since the thread scheduler will call another thread during the waiting time
+            // Without this line, the infinite while loop is called much more often, even if the calculation for the update of the state of the vehicle is not executed (if (timeSinceLastUpdate >= cycleDuration))
 
         // compute time difference to stop watch
         long timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastUpdate).count();
-        if (timeSinceLastUpdate >= cycleDuration)
+        if (timeSinceLastUpdate >= cycleDuration) // This makes the simulation real time, since the position update is only done, if the time in the real world is also moved on in the same amount
         {
             // update position with a constant velocity motion model
             _posStreet += _speed * timeSinceLastUpdate / 1000;
