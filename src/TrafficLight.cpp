@@ -15,9 +15,12 @@ T MessageQueue<T>::receive()
     
     // FIXME: Implement the .wait() functionallity
     std::unique_lock<std::mutex> lck(_mtx); // unique_lock necessary, because we need to use the wait functionallity here
+    _cond.wait(lck, [this](){return !_queue.empty(); }); // lock the thread until the queue is not empty and then pull the next traffic light phase
+
     // Work with .back() and .pop_back() to access the first inserted element of the queue
     T result = std::move(_queue.back());
     _queue.pop_back();  
+    
     return result; 
 }
 
@@ -29,6 +32,7 @@ void MessageQueue<T>::send(T &&msg)
     std::lock_guard<std::mutex> lck(_mtx); // locks until the end of the scope
     // Work with .push_front(T) to insert at the front of the queue
     _queue.emplace_front(msg); 
+    _cond.notify_one(); // free the condition variable for one thread
 }
 
 
@@ -46,7 +50,13 @@ void TrafficLight::waitForGreen()
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
-    std::chrono::milliseconds(100); // DEBUG
+    while (true){ // The infinite while-loop is necessary, since we can receive a TrafficLightPhase::red from the _phaseQueue 
+        //std::chrono::milliseconds(10); // To reduce the load on the processor
+        TrafficLightPhase current_phase = _phaseQueue.receive(); 
+        if (current_phase == TrafficLightPhase::green){
+            return; 
+        }
+    }
 }
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
@@ -88,7 +98,7 @@ void TrafficLight::cycleThroughPhases()
 
             // send an update message to the message queue
             TrafficLightPhase tmp_phase = _currentPhase; // default copy assignment operator
-            _phaseQueue.send(std::move(tmp_phase)); 
+            _phaseQueue.send(std::move(tmp_phase)); // move the current traffic light phase to the MessageQueue<TrafficLightPhase>
 
             // update _cycleDuration for the next traffic light phase
             _cycleDuration = calculateRandomPhase(); 
