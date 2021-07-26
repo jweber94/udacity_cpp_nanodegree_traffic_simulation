@@ -87,6 +87,7 @@ void TrafficLight::cycleThroughPhases()
 
         // compute time difference to stop watch
         long timeSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastUpdate).count();
+        std::cout << "This is timeSinceLastUpdate: " << timeSinceLastUpdate << "\nAnd this is _cycleDuration: " << _cycleDuration << "\n"; // Debug  
         if (timeSinceLastUpdate >= _cycleDuration) // do the update of the light phase if enough time has passed
         {
             // toggle the traffic light
@@ -111,9 +112,25 @@ void TrafficLight::cycleThroughPhases()
 }
 
 double TrafficLight::calculateRandomPhase(){
+    /*
+    // old code
     // calculates a random double number between 4 and 6 in order to calculate the next duration of the traffic light phase
     double valMin = 4; 
     double valMax = 6; 
     double randNum = (double)rand() / RAND_MAX; // random number between 0 and 1
-    return  valMin + randNum * (valMax - valMin); // min value with the offset of a random propotion of the given number interval
+    double random_num = valMin + randNum * (valMax - valMin); // min value with the offset of a random propotion of the given number interval
+    */
+    
+    /*
+     * returns the cycle duration between 4000 and 6000 milliseconds (which is 4 to 6 seconds, but we want to be consistent with milliseconds within the whole code base)
+     */
+
+    std::random_device rd; 
+    std::mt19937 eng(rd()); 
+
+    std::uniform_int_distribution<> distr(4000, 6000); 
+
+    int cycle_dur = distr(eng); 
+    //std::cout << "Cycle duration: " << cycle_dur << "\n"; // DEBUG
+    return  cycle_dur; 
 }
